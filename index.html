@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orion: Semantic Uplift Pipeline for Egocentric Video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f9f8f5;
+    --surface: #ffffff;
+    --ink: #1a1916;
+    --ink-muted: #6b6760;
+    --ink-faint: #b0aea9;
+    --accent: #2b5ce6;
+    --accent-warm: #e05c2e;
+    --accent-light: #eef2fd;
+    --border: #e8e6e1;
+    --border-strong: #ccc9c2;
+    --radius: 10px;
+    --max-w: 820px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 17px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── NAV ─────────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(249,248,245,0.88);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: center;
+    height: 52px;
+  }
+  .nav-inner {
+    max-width: var(--max-w);
+    width: 100%;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+  }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 24px; list-style: none; }
+  .nav-links a {
+    font-size: 13px; font-weight: 500; letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--ink-muted);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ── WRAPPER ──────────────────────────────────────── */
+  .page { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+  /* ── HERO ─────────────────────────────────────────── */
+  header {
+    padding-top: 120px;
+    padding-bottom: 56px;
+    text-align: center;
+    animation: fadeUp 0.7s ease both;
+  }
+
+  .venue-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 14px; border-radius: 99px;
+    margin-bottom: 28px;
+    border: 1px solid #c5d4f8;
+  }
+  .venue-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 5vw, 44px);
+    line-height: 1.18;
+    color: var(--ink);
+    max-width: 760px;
+    margin: 0 auto 10px;
+  }
+  h1 em { color: var(--accent); font-style: italic; }
+
+  .subtitle {
+    font-size: 15px; color: var(--ink-muted);
+    max-width: 560px; margin: 0 auto 36px;
+    line-height: 1.6;
+  }
+
+  /* ── AUTHORS ──────────────────────────────────────── */
+  .authors {
+    display: flex; flex-wrap: wrap;
+    justify-content: center; gap: 6px 18px;
+    margin-bottom: 12px;
+  }
+  .author {
+    font-size: 15px; font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .author:hover { color: var(--accent); }
+  .author sup { font-size: 10px; color: var(--accent); margin-left: 1px; }
+  .affiliation {
+    font-size: 13px; color: var(--ink-muted);
+    margin-bottom: 32px;
+  }
+
+  /* ── BUTTONS ──────────────────────────────────────── */
+  .btn-row {
+    display: flex; flex-wrap: wrap;
+    justify-content: center; gap: 10px;
+    margin-bottom: 0;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 20px;
+    border-radius: var(--radius);
+    font-size: 14px; font-weight: 500;
+    text-decoration: none;
+    transition: all 0.18s;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent);
+  }
+  .btn-primary:hover { background: #1f4bd1; border-color: #1f4bd1; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(43,92,230,0.28); }
+  .btn-outline {
+    background: var(--surface); color: var(--ink);
+    border-color: var(--border-strong);
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+  .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── HERO DIVIDER ─────────────────────────────────── */
+  .hero-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 56px 0 0;
+  }
+
+  /* ── SECTIONS ─────────────────────────────────────── */
+  section {
+    padding: 60px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp 0.6s ease both;
+  }
+  section:last-of-type { border-bottom: none; }
+
+  .section-label {
+    display: inline-block;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 18px;
+  }
+
+  h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(22px, 3.5vw, 30px);
+    line-height: 1.25;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+
+  p { margin-bottom: 16px; color: var(--ink); }
+  p:last-child { margin-bottom: 0; }
+
+  /* ── ABSTRACT ─────────────────────────────────────── */
+  .abstract-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .abstract-box::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-warm));
+    border-radius: 3px 0 0 3px;
+  }
+  .abstract-box p { font-size: 15.5px; line-height: 1.75; color: #2e2c29; }
+
+  /* ── CONTRIBUTIONS ────────────────────────────────── */
+  .contrib-list { list-style: none; display: grid; gap: 14px; }
+  .contrib-list li {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  }
+  .contrib-list li:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 20px rgba(43,92,230,0.08);
+    transform: translateX(3px);
+  }
+  .contrib-icon {
+    width: 32px; height: 32px; flex-shrink: 0;
+    background: var(--accent-light);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    margin-top: 1px;
+  }
+  .contrib-text strong {
+    display: block; font-size: 15px; font-weight: 600;
+    color: var(--ink); margin-bottom: 3px;
+  }
+  .contrib-text span { font-size: 14px; color: var(--ink-muted); line-height: 1.55; }
+
+  /* ── PIPELINE ─────────────────────────────────────── */
+  .pipeline-stages {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .stage {
+    background: var(--surface);
+    padding: 20px 16px;
+    text-align: center;
+    transition: background 0.2s;
+  }
+  .stage:hover { background: var(--accent-light); }
+  .stage-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--accent);
+    font-weight: 500; letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .stage-name {
+    font-size: 13px; font-weight: 600; color: var(--ink);
+    margin-bottom: 5px;
+  }
+  .stage-desc { font-size: 12px; color: var(--ink-muted); line-height: 1.45; }
+
+  .method-detail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .method-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .method-card:hover { border-color: var(--border-strong); }
+  .method-card h4 {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .method-card h4 span { font-size: 16px; }
+  .method-card p { font-size: 13.5px; color: var(--ink-muted); line-height: 1.55; margin-bottom: 0; }
+
+  /* ── RESULTS ──────────────────────────────────────── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    text-align: center;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .metric-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .metric-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .metric-label { font-size: 12.5px; color: var(--ink-muted); font-weight: 500; letter-spacing: 0.03em; }
+  .metric-sub { font-size: 11px; color: var(--ink-faint); margin-top: 3px; }
+
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .results-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-bottom: 2px solid var(--border);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--ink-muted);
+  }
+  .results-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink);
+  }
+  .results-table tr:last-child td { border-bottom: none; }
+  .results-table tr.highlight td {
+    background: var(--accent-light);
+    font-weight: 600;
+  }
+  .results-table td.best { color: var(--accent); font-weight: 700; }
+  .results-table tr:hover td { background: #f3f2ef; }
+  .results-table tr.highlight:hover td { background: #dce6fb; }
+
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    overflow-x: auto;
+    margin-bottom: 16px;
+  }
+
+  .placeholder-img {
+    background: linear-gradient(135deg, #f0ede8, #e8e4dc);
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+    min-height: 200px;
+    color: var(--ink-faint);
+    font-size: 13px;
+    text-align: center;
+    padding: 24px;
+  }
+  .placeholder-img svg { opacity: 0.4; }
+  .placeholder-img span { font-weight: 500; color: var(--ink-muted); display: block; margin-bottom: 2px; font-size: 14px; }
+
+  .fig-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-top: 28px;
+  }
+  figcaption { font-size: 12.5px; color: var(--ink-muted); margin-top: 8px; text-align: center; line-height: 1.5; }
+
+  /* ── CITATION ─────────────────────────────────────── */
+  .cite-box {
+    background: #1e1c18;
+    color: #e8e5dc;
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.75;
+    position: relative;
+    overflow-x: auto;
+  }
+  .cite-box .kw { color: #7eb3ff; }
+  .cite-box .str { color: #98d5a8; }
+  .copy-btn {
+    position: absolute; top: 12px; right: 12px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #a09d96; font-size: 11px; padding: 4px 10px;
+    border-radius: 5px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.14); color: #e8e5dc; }
+
+  /* ── FOOTER ───────────────────────────────────────── */
+  footer {
+    padding: 40px 0;
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--ink-muted); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+
+  /* ── ANIMATION ────────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  section:nth-child(1) { animation-delay: 0.05s; }
+  section:nth-child(2) { animation-delay: 0.10s; }
+  section:nth-child(3) { animation-delay: 0.15s; }
+  section:nth-child(4) { animation-delay: 0.20s; }
+  section:nth-child(5) { animation-delay: 0.25s; }
+
+  /* ── RESPONSIVE ───────────────────────────────────── */
+  @media (max-width: 640px) {
+    nav { padding: 0 16px; }
+    .page { padding: 0 16px; }
+    header { padding-top: 96px; padding-bottom: 40px; }
+    .nav-links { display: none; }
+    .method-detail { grid-template-columns: 1fr; }
+    .results-grid { grid-template-columns: repeat(2, 1fr); }
+    .fig-grid { grid-template-columns: 1fr; }
+    .abstract-box { padding: 20px; }
+    .pipeline-stages { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo"><span>Orion</span> — Semantic Uplift</div>
+    <ul class="nav-links">
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#contributions">Contributions</a></li>
+      <li><a href="#method">Method</a></li>
+      <li><a href="#results">Results</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="page">
+
+<!-- HEADER -->
+<header>
+  <div class="venue-badge">AAAI 2026 · Algoverse AI Research</div>
+
+  <h1>Orion: A <em>Semantic Uplift</em> Pipeline for Building Persistent, Queryable Knowledge from Egocentric Video</h1>
+  <p class="subtitle">Transforming raw perceptual streams into high-level, causally grounded knowledge graphs — end-to-end, annotation-free.</p>
+
+  <div class="authors">
+    <a class="author" href="#">Riddhiman Rana<sup>*1</sup></a>
+    <a class="author" href="#">Aryav Semwal<sup>1</sup></a>
+    <a class="author" href="#">Yogesh Atluru<sup>1</sup></a>
+    <a class="author" href="#">Kevin Zhu<sup>1†</sup></a>
+    <a class="author" href="#">Sunith Vallabhaneni<sup>1†</sup></a>
+  </div>
+  <div class="affiliation">
+    <sup>1</sup>Algoverse AI Research &nbsp;·&nbsp;
+    <sup>*</sup>Lead Author &nbsp;·&nbsp;
+    <sup>†</sup>Senior Author
+  </div>
+
+  <div class="btn-row">
+    <a class="btn btn-primary" href="#" onclick="return false;">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Paper PDF
+    </a>
+    <a class="btn btn-outline" href="https://github.com/riddhimanrana/orion-research" target="_blank" rel="noopener">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.6-4.04-1.6-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.48 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 013-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.9 1.24 3.22 0 4.61-2.81 5.62-5.49 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      Code
+    </a>
+    <a class="btn btn-outline" href="#citation">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+      Cite
+    </a>
+  </div>
+  <hr class="hero-divider" />
+</header>
+
+<!-- ABSTRACT -->
+<section id="abstract">
+  <span class="section-label">Abstract</span>
+  <div class="abstract-box">
+    <p>Understanding causal dynamics in egocentric video remains a fundamental challenge for grounded language and vision systems. Existing approaches detect objects and actions but fail to synthesize these into coherent, causally structured representations.</p>
+    <p>We introduce <strong>Orion</strong>, a system that transforms raw perceptual streams into high-level, symbolic knowledge graphs — a process we term <em>semantic uplift</em>. Orion integrates state-of-the-art perception and reasoning components, including object detection (YOLOv11), segmentation (SAM), object description (FastVLM), embedding-based tracking (CLIP), semantic label correction (Sentence-BERT), and high-level event summarization (Gemma 3), collectively constructing temporally aligned, dynamic knowledge graphs from raw video.</p>
+    <p>Using the Action Genome dataset, Orion achieves strong relation prediction accuracy and causal coherence. Our key contribution is a scientifically grounded system supported by causal scoring, configuration-aware thresholds, and constrained prompt-based reasoning — positioning semantic uplift as a bridge between low-level vision and high-level causal language representations.</p>
+  </div>
+</section>
+
+<!-- CONTRIBUTIONS -->
+<section id="contributions">
+  <span class="section-label">Contributions</span>
+  <h2>What We Introduce</h2>
+  <ul class="contrib-list">
+    <li>
+      <div class="contrib-icon">🧠</div>
+      <div class="contrib-text">
+        <strong>Semantic Uplift Engine</strong>
+        <span>A novel module that converts low-level perceptual inputs (detections, masks, embeddings) into high-level symbolic relations and causally grounded event structures.</span>
+      </div>
+    </li>
+    <li>
+      <div class="contrib-icon">⚡</div>
+      <div class="contrib-text">
+        <strong>Orion End-to-End System</strong>
+        <span>An integrated pipeline combining perception (YOLO11x, CLIP), tracking (Hungarian algorithm, HDBSCAN), and LLM reasoning (Gemma 3) to produce interpretable, queryable video-derived knowledge graphs.</span>
+      </div>
+    </li>
+    <li>
+      <div class="contrib-icon">📊</div>
+      <div class="contrib-text">
+        <strong>Empirical Validation on Action Genome</strong>
+        <span>Improved relation prediction accuracy and causal coherence over heuristic and state-of-the-art baselines, with annotation-free operation on 50 egocentric clips (~5K frames).</span>
+      </div>
+    </li>
+    <li>
+      <div class="contrib-icon">🔬</div>
+      <div class="contrib-text">
+        <strong>Ablation Insights</strong>
+        <span>Quantitative ablations isolating the contributions of HDBSCAN clustering, state change detection, and structured LLM-based event composition on final graph quality.</span>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- METHOD -->
+<section id="method">
+  <span class="section-label">Method</span>
+  <h2>Semantic Uplift Pipeline</h2>
+  <p>Orion processes raw egocentric video through five sequential stages, bridging low-level visual signals to persistent, causally structured knowledge graphs.</p>
+
+  <div class="pipeline-stages">
+    <div class="stage">
+      <div class="stage-num">01 / PERCEPTION</div>
+      <div class="stage-name">Perception Phase</div>
+      <div class="stage-desc">YOLOv11x detection · CLIP embeddings · Spatial analysis</div>
+    </div>
+    <div class="stage">
+      <div class="stage-num">02 / TRACKING</div>
+      <div class="stage-name">Semantic Uplift</div>
+      <div class="stage-desc">HDBSCAN clustering · State detection · LLM event composition</div>
+    </div>
+    <div class="stage">
+      <div class="stage-num">03 / GRAPH</div>
+      <div class="stage-name">KG Construction</div>
+      <div class="stage-desc">Entity nodes · Causal reasoning · Temporal sequencing</div>
+    </div>
+    <div class="stage">
+      <div class="stage-num">04 / STORAGE</div>
+      <div class="stage-name">Storage & Index</div>
+      <div class="stage-desc">Neo4j persistence · Vector indexing · Relation constraints</div>
+    </div>
+    <div class="stage">
+      <div class="stage-num">05 / QUERY</div>
+      <div class="stage-name">Query & Q&A</div>
+      <div class="stage-desc">Knowledge retrieval · LLM-based answer generation</div>
+    </div>
+  </div>
+
+  <div class="method-detail">
+    <div class="method-card">
+      <h4><span>👁️</span> Dual-Loop Perception</h4>
+      <p>A high-frequency loop (30–60 FPS) handles frame sampling and visual embedding extraction via CLIP, while a slower loop (1–5 FPS) manages rich FastVLM descriptions — decoupling perception throughput from LLM cost.</p>
+    </div>
+    <div class="method-card">
+      <h4><span>🔗</span> Entity Tracking</h4>
+      <p>HDBSCAN clustering on L2-normalized CLIP embeddings (512–2048 dim) assigns stable entity IDs across occlusion and re-identification. Optical flow and velocity support temporal state linking.</p>
+    </div>
+    <div class="method-card">
+      <h4><span>✅</span> Semantic Validation</h4>
+      <p>A hybrid rule-based + Sentence-BERT layer (all-MiniLM-L6-v2) corrects COCO misclassifications. Classes with similarity &lt; 0.75 are re-evaluated. Improves accuracy from ~80% to 85–90%.</p>
+    </div>
+    <div class="method-card">
+      <h4><span>⚗️</span> Causal Inference</h4>
+      <p>A Causal Influence Score (CIS) combines temporal ordering, spatial proximity, and motion/semantic correlation to propose directed causal links between state-change event pairs.</p>
+    </div>
+  </div>
+
+  <div class="fig-grid">
+    <figure>
+      <div class="placeholder-img">
+        <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" stroke-width="1.5"/><path d="M21 15l-5-5L5 21" stroke-width="1.5"/></svg>
+        <span>Pipeline Architecture Diagram</span>
+        Figure 1: Full Semantic Uplift pipeline overview
+      </div>
+      <figcaption>Fig. 1 — End-to-end pipeline from raw video frames to queryable Neo4j knowledge graph.</figcaption>
+    </figure>
+    <figure>
+      <div class="placeholder-img">
+        <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="9" stroke-width="1.5"/><path d="M12 3v9l5 3" stroke-width="1.5"/></svg>
+        <span>Knowledge Graph Visualization</span>
+        Example causal graph output
+      </div>
+      <figcaption>Fig. 2 — Sample causal knowledge graph: entity nodes, spatial edges, and inferred causal links.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results">
+  <span class="section-label">Results</span>
+  <h2>Evaluation on Action Genome</h2>
+  <p>Evaluated on 50 egocentric clips (~5K frames) from the Action Genome dataset with causal dynamics. All baselines share the same YOLO11x / CLIP perception backbone to isolate uplift quality.</p>
+
+  <div class="results-grid">
+    <div class="metric-card">
+      <div class="metric-val">16.8%</div>
+      <div class="metric-label">Entity Precision</div>
+      <div class="metric-sub">Keyframe-sampled design</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val">85–90%</div>
+      <div class="metric-label">Semantic Accuracy</div>
+      <div class="metric-sub">Post-validation layer</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val">30–60 FPS</div>
+      <div class="metric-label">Perception Speed</div>
+      <div class="metric-sub">High-frequency loop</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Entity P (%)</th>
+          <th>Entity R (%)</th>
+          <th>Entity F1 (%)</th>
+          <th>Annotation-Free</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>LLM-Only Captions (VoT-style)</td>
+          <td>—</td><td>—</td><td>—</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Heuristic Uplift Engine</td>
+          <td>—</td><td>—</td><td>—</td>
+          <td>✓</td>
+        </tr>
+        <tr class="highlight">
+          <td><strong>Orion (Ours)</strong></td>
+          <td class="best">16.8</td>
+          <td class="best">1.4</td>
+          <td class="best">2.4</td>
+          <td>✓</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:13px; color: var(--ink-muted);">† Lower recall is expected by design: Orion uses keyframe sampling for efficiency rather than dense per-frame annotation matching. Full Triplet F1 and Causal F1 results will be reported upon completion.</p>
+
+  <div class="fig-grid">
+    <figure>
+      <div class="placeholder-img">
+        <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M3 3v18h18" stroke-width="1.5" stroke-linecap="round"/><path d="M7 16l4-4 4 4 4-7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Triplet F1 Comparison</span>
+        Orion vs. baselines
+      </div>
+      <figcaption>Fig. 3 — Triplet F1 across all baselines (to be updated with full results).</figcaption>
+    </figure>
+    <figure>
+      <div class="placeholder-img">
+        <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="1.5"/><path d="M9 9h6M9 13h6M9 17h4" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>UMAP Embedding Visualization</span>
+        CLIP entity clusters
+      </div>
+      <figcaption>Fig. 4 — UMAP projection of HDBSCAN entity clusters from CLIP embeddings.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- CITATION -->
+<section id="citation">
+  <span class="section-label">Citation</span>
+  <h2>Cite This Work</h2>
+  <div class="cite-box" id="bibtex-box">
+    <button class="copy-btn" onclick="copyBibtex()">Copy</button>
+<span class="kw">@inproceedings</span>{rana2026orion,<br>
+&nbsp;&nbsp;<span class="kw">title</span>     = {<span class="str">Orion: A Semantic Uplift Pipeline for Building Persistent,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Queryable Knowledge from Egocentric Video</span>},<br>
+&nbsp;&nbsp;<span class="kw">author</span>    = {<span class="str">Rana, Riddhiman and Semwal, Aryav and Atluru, Yogesh<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; and Zhu, Kevin and Vallabhaneni, Sunith</span>},<br>
+&nbsp;&nbsp;<span class="kw">booktitle</span> = {<span class="str">Proceedings of the AAAI Conference on Artificial Intelligence</span>},<br>
+&nbsp;&nbsp;<span class="kw">year</span>      = {<span class="str">2026</span>},<br>
+&nbsp;&nbsp;<span class="kw">organization</span> = {<span class="str">Algoverse AI Research</span>}<br>
+}
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    <a href="#">Algoverse AI Research</a> · 2026 ·
+    Questions? <a href="mailto:riddhiman.rana@gmail.com">riddhiman.rana@gmail.com</a>
+  </p>
+  <p style="margin-top:6px;">Code available at <a href="https://github.com/riddhimanrana/orion-research" target="_blank">github.com/riddhimanrana/orion-research</a></p>
+</footer>
+
+</div><!-- .page -->
+
+<script>
+function copyBibtex() {
+  const raw = `@inproceedings{rana2026orion,
+  title     = {Orion: A Semantic Uplift Pipeline for Building Persistent, Queryable Knowledge from Egocentric Video},
+  author    = {Rana, Riddhiman and Semwal, Aryav and Atluru, Yogesh and Zhu, Kevin and Vallabhaneni, Sunith},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  year      = {2026},
+  organization = {Algoverse AI Research}
+}`;
+  navigator.clipboard.writeText(raw).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+// Intersection observer for section reveals
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.08 });
+
+document.querySelectorAll('section').forEach(s => {
+  s.style.opacity = '0';
+  s.style.transform = 'translateY(18px)';
+  s.style.transition = 'opacity 0.55s ease, transform 0.55s ease';
+  obs.observe(s);
+});
+</script>
+</body>
+</html>
